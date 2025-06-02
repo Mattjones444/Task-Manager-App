@@ -1,0 +1,89 @@
+package com.taskmanager.model;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.*;
+
+
+@Entity
+@Table(name = "task")
+public class Task {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+    private String description;
+    private boolean complete;
+    private LocalDateTime setDate;
+
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id") 
+    private AppUser user;
+
+    
+    public Task() {}
+
+    public Task(Long id, String title, String description, AppUser user, boolean complete,LocalDateTime setDate) {
+        this.id=id;
+        this.title = title;
+        this.description = description;
+        this.user = user;
+        this.complete=complete;
+        this.setDate=setDate;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public boolean isComplete() {
+        return complete;
+    }
+
+    public void setComplete(boolean complete) {
+        this.complete = complete;
+    }
+
+    public LocalDateTime getSetDate() {
+        return setDate;
+    }
+
+    public void setSetDate(LocalDateTime setDate) {
+        this.setDate = setDate;
+    }
+
+    public AppUser getUser() {
+        return user;
+    }
+
+    public void setUser(AppUser user) {
+        this.user = user;
+    }
+
+    
+
+    
+  
+}
+
