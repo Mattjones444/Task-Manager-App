@@ -1,5 +1,5 @@
 package com.taskmanager.model;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import jakarta.persistence.*;
 
@@ -14,7 +14,7 @@ public class Task {
     private String title;
     private String description;
     private boolean complete;
-    private LocalDateTime setDate;
+    private LocalDate setDate;
 
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -24,7 +24,7 @@ public class Task {
     
     public Task() {}
 
-    public Task(Long id, String title, String description, AppUser user, boolean complete,LocalDateTime setDate) {
+    public Task(Long id, String title, String description, AppUser user, boolean complete,LocalDate setDate) {
         this.id=id;
         this.title = title;
         this.description = description;
@@ -65,11 +65,11 @@ public class Task {
         this.complete = complete;
     }
 
-    public LocalDateTime getSetDate() {
+    public LocalDate getSetDate() {
         return setDate;
     }
 
-    public void setSetDate(LocalDateTime setDate) {
+    public void setSetDate(LocalDate setDate) {
         this.setDate = setDate;
     }
 
