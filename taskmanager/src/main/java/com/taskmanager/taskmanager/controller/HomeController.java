@@ -1,4 +1,4 @@
-package com.taskmanager.taskmanager; // Must match your main class package or be scanned
+package com.taskmanager.taskmanager.controller; // Must match your main class package or be scanned
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

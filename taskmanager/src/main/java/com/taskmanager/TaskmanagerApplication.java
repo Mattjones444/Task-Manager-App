@@ -17,16 +17,7 @@ public class TaskmanagerApplication {
 	}
 
 
-	@Bean
-public CommandLineRunner demo(UserRepository repo) {
-    return args -> {
-        AppUser u = new AppUser();
-        u.setUsername("Test User");
-        repo.save(u);
-        System.out.println("✅ User saved to database.");
-    };
 
-}
 
 
 }
