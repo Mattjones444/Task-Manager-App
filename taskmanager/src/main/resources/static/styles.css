@@ -10,7 +10,7 @@ body {
     background-color: #f4f4f4;
 }
 
-.create-task {
+.task {
     padding: 10px 20px;
     font-size: 1em;
     background-color: #4CAF50;
@@ -19,9 +19,10 @@ body {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    margin:5px;
 }
 
-.create-task:hover {
+.task:hover {
     background-color: #45a049;
 }
 
