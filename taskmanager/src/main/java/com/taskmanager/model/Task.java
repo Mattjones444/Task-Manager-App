@@ -1,8 +1,7 @@
 package com.taskmanager.model;
+
 import java.time.LocalDate;
-
 import jakarta.persistence.*;
-
 
 @Entity
 @Table(name = "task")
@@ -11,28 +10,36 @@ public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
     private String title;
     private String description;
-    private boolean complete;
+
+    @Enumerated(EnumType.STRING)
+    private TaskStatus status;  // new status field
+    
     private LocalDate setDate;
 
-    
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id") 
+    @JoinColumn(name = "user_id")
     private AppUser user;
 
-    
+    @Column(nullable = false)
+    private boolean complete = false;  // new complete field with default false
+
     public Task() {}
 
-    public Task(Long id, String title, String description, AppUser user, boolean complete,LocalDate setDate) {
-        this.id=id;
+    public Task(Long id, String title, String description, AppUser user, TaskStatus status, LocalDate setDate, boolean complete) {
+        this.id = id;
         this.title = title;
         this.description = description;
         this.user = user;
-        this.complete=complete;
-        this.setDate=setDate;
+        this.status = status;
+        this.setDate = setDate;
+        this.complete = complete;
     }
 
+    // Getters and setters
+    
     public Long getId() {
         return id;
     }
@@ -57,12 +64,12 @@ public class Task {
         this.description = description;
     }
 
-    public boolean isComplete() {
-        return complete;
+    public TaskStatus getStatus() {
+        return status;
     }
 
-    public void setComplete(boolean complete) {
-        this.complete = complete;
+    public void setStatus(TaskStatus status) {
+        this.status = status;
     }
 
     public LocalDate getSetDate() {
@@ -81,9 +88,14 @@ public class Task {
         this.user = user;
     }
 
-    
+    public boolean isComplete() {
+        return complete;
+    }
 
-    
-  
+    public void setComplete(boolean complete) {
+        this.complete = complete;
+    }
 }
+
+
 
