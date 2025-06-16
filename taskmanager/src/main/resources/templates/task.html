@@ -16,19 +16,19 @@
   <div class="column">
     <h2>To Do</h2>
     <ul>
-      <li class="task-card" th:each="task : ${todoTasks}" th:text="${task.description}">Sample To Do Task</li>
+      <li class="task-card" draggable="true" th:each="task : ${todoTasks}" th:text="${task.description}" th:attr="data-task-id=${task.id}">Sample To Do Task</li>
     </ul>
   </div>
   <div class="column">
     <h2>In Progress</h2>
     <ul>
-      <li class="task-card" th:each="task : ${inProgressTasks}" th:text="${task.description}">Sample In Progress Task</li>
+      <li class="task-card" draggable="true" th:each="task : ${inProgressTasks}" th:text="${task.description}" th:attr="data-task-id=${task.id}">Sample In Progress Task</li>
     </ul>
   </div>
   <div class="column">
     <h2>Done</h2>
     <ul>
-      <li class="task-card" th:each="task : ${doneTasks}" th:text="${task.description}">Sample Done Task</li>
+      <li class="task-card" draggable="true" th:each="task : ${doneTasks}" th:text="${task.description}" th:attr="data-task-id=${task.id}">Sample Done Task</li>
     </ul>
   </div>
 </div>
@@ -58,57 +58,162 @@
   </div>
 
   <script>
-    // Get modal elements
-    const modal = document.getElementById("taskModal");
-    const openBtn = document.getElementById("openTaskModalBtn");
-    const closeBtn = modal.querySelector(".close-button");
+// Make task cards draggable
+const tasks = document.querySelectorAll('.task-card');
+tasks.forEach(task => {
+  task.setAttribute('draggable', true);
+  task.addEventListener('dragstart', dragStart);
+});
 
-    // Open modal on button click
-    openBtn.addEventListener("click", () => {
-      modal.style.display = "flex";
-    });
+function dragStart(e) {
+  e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
+  e.dataTransfer.effectAllowed = 'move';
+}
 
-    // Close modal on close button click
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
 
-    // Close modal if clicking outside modal content
-    window.addEventListener("click", (event) => {
-      if (event.target === modal) {
-        modal.style.display = "none";
-      }
-    });
+function drop(e) {
+  e.preventDefault();
+  const taskId = e.dataTransfer.getData('text/plain');
+  if (!taskId) {
+    alert('No task ID found for dragged element.');
+    return;
+  }
 
+  // Find the column element (assuming .column > h2 + ul)
+  const column = e.target.closest('.column');
+  if (!column) {
+    alert('Drop column not found!');
+    return;
+  }
+  const columnTitle = column.querySelector('h2').innerText.trim();
+
+  const statusMap = {
+    'To Do': 'TO_DO',
+    'In Progress': 'IN_PROGRESS',
+    'Done': 'DONE'
+  };
+  const newStatus = statusMap[columnTitle];
+
+  if (!newStatus) {
+    alert('Invalid column status: ' + columnTitle);
+    return;
+  }
+
+  fetch(`/api/tasks/${taskId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Failed to update task status');
+    return response.json();
+  })
+  .then(() => {
+    const dropZone = e.target.closest('ul');
+    if (!dropZone) {
+      alert('Drop zone not found!');
+      return;
+    }
+
+    const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
+    if (card) {
+      dropZone.appendChild(card);
+    } else {
+      console.warn('Card not found for taskId:', taskId);
+    }
+  })
+  .catch(err => {
+    alert(err.message);
+  });
+}
+
+// Attach dragover and drop listeners to each column ul
+const columns = document.querySelectorAll('.column ul');
+columns.forEach(column => {
+  column.addEventListener('dragover', dragOver);
+  column.addEventListener('drop', drop);
+});
+
+
+// Modal and Create Task logic
+
+const modal = document.getElementById('taskModal');
+const openModalBtn = document.getElementById('openTaskModalBtn');
+const closeModalBtn = modal.querySelector('.close-button');
+const taskForm = document.getElementById('taskForm');
+
+// Open modal when clicking the "Create Task" button
+openModalBtn.addEventListener('click', () => {
+  modal.style.display = 'flex'; // Show modal using flex (as per your CSS)
+});
+
+// Close modal when clicking the close button
+closeModalBtn.addEventListener('click', () => {
+  modal.style.display = 'none';
+});
+
+// Close modal when clicking outside modal content
+window.addEventListener('click', (event) => {
+  if (event.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+
+// Handle form submission
 function submitTaskForm(event) {
   event.preventDefault();
-  const form = event.target;
-  const data = {
-    title: form.title.value,
-    description: form.description.value,
-    setDate: form.setDate.value
+
+  const formData = {
+    title: taskForm.title.value,
+    description: taskForm.description.value,
+    setDate: taskForm.setDate.value,
+    status: "TO_DO"  // Default new tasks to TO_DO
   };
 
   fetch('/api/tasks', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData)
   })
   .then(response => {
-    if (!response.ok) throw new Error('Network response was not ok');
-    return response.json(); // or response.text() based on your API
+    if (!response.ok) throw new Error('Failed to create task');
+    return response.json();
   })
-  .then(() => {
+  .then(newTask => {
+    // Close modal
     modal.style.display = 'none';
-    form.reset();
-    location.reload(); // reload page to get updated tasks
+
+    // Reset form
+    taskForm.reset();
+
+    // Create new task card element
+    const newTaskCard = document.createElement('li');
+    newTaskCard.classList.add('task-card');
+    newTaskCard.setAttribute('draggable', 'true');
+    newTaskCard.dataset.taskId = newTask.id;
+    newTaskCard.textContent = newTask.description || newTask.title;
+
+    // Add drag event listener
+    newTaskCard.addEventListener('dragstart', dragStart);
+
+    // Append new task card to the To Do column (first column ul)
+    const todoColumnUl = document.querySelector('.column:nth-child(1) ul');
+    todoColumnUl.appendChild(newTaskCard);
   })
-  .catch(error => {
-    alert('Failed to create task: ' + error.message);
+  .catch(err => {
+    alert(err.message);
   });
 }
+
+
+
+
+
+
 
   </script>
 

@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,7 @@ public class TaskController {
         // User's tasks grouped by status
         List<Task> userTasks = taskRepository.findByUser(currentUser);
         Map<TaskStatus, List<Task>> grouped = userTasks.stream()
+                .filter(t -> t.getStatus() != null)
                 .collect(Collectors.groupingBy(Task::getStatus));
 
         model.addAttribute("todoTasks",       grouped.getOrDefault(TaskStatus.TO_DO,        List.of()));
@@ -60,21 +62,22 @@ public class TaskController {
        ======================================================== */
 
     // POST /api/tasks
-    @PostMapping("/api/tasks")
-    @ResponseBody
-    public ResponseEntity<Task> createTask(@RequestBody Task newTask) {
+@PostMapping("/api/tasks")
+@ResponseBody
+public ResponseEntity<Task> createTask(@RequestBody Task newTask) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentUsername = auth.getName();
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String currentUsername = auth.getName();
 
-        AppUser currentUser = userRepository.findByUsername(currentUsername)
-                .orElseThrow(() -> new RuntimeException("User not found: " + currentUsername));
+    AppUser currentUser = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new RuntimeException("User not found: " + currentUsername));
 
-        newTask.setUser(currentUser);
-        Task saved = taskRepository.save(newTask);
+    newTask.setUser(currentUser);
+    newTask.setStatus(TaskStatus.TO_DO);  
+    Task saved = taskRepository.save(newTask);
 
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
+    return new ResponseEntity<>(saved, HttpStatus.CREATED);
+}
 
     // GET /api/tasks
     @GetMapping("/api/tasks")
@@ -89,4 +92,26 @@ public class TaskController {
     public Iterable<AppUser> getAllUsers() {
         return userRepository.findAll();
     }
+
+@PatchMapping("/api/tasks/{id}")
+public ResponseEntity<Task> updateTaskStatus(@PathVariable Long id, @RequestBody Map<String, String> updates) {
+    Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+
+    if (updates.containsKey("status")) {
+        String statusStr = updates.get("status").toUpperCase().replaceAll("\\s", "_"); // normalize string
+
+        TaskStatus newStatus;
+        try {
+            newStatus = TaskStatus.valueOf(statusStr);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status value: " + statusStr);
+        }
+
+        task.setStatus(newStatus);
+    }
+
+    Task updated = taskRepository.save(task);
+    return ResponseEntity.ok(updated);
+}
 }

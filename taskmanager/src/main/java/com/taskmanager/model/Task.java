@@ -1,6 +1,9 @@
 package com.taskmanager.model;
 
 import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -20,6 +23,7 @@ public class Task {
     private LocalDate setDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
+     @JsonIgnore
     @JoinColumn(name = "user_id")
     private AppUser user;
 

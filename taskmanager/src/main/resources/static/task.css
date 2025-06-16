@@ -47,6 +47,12 @@ ul {
   margin: 0;
 }
 
+.column ul {
+  min-height: 150px;
+  border: 2px dashed #ccc; /* for debugging */
+  padding: 10px;
+}
+
 .task-card {
   background: #e3e7f1;
   border-left: 5px solid #4a90e2;
