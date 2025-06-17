@@ -114,4 +114,15 @@ public ResponseEntity<Task> updateTaskStatus(@PathVariable Long id, @RequestBody
     Task updated = taskRepository.save(task);
     return ResponseEntity.ok(updated);
 }
+
+@DeleteMapping("/api/tasks/{id}")
+public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+    if (taskRepository.existsById(id)) {
+        taskRepository.deleteById(id);
+        return ResponseEntity.noContent().build(); // 204 No Content
+    } else {
+        return ResponseEntity.notFound().build();  // 404 Not Found
+    }
+}
+
 }

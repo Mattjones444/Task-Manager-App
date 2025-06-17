@@ -31,7 +31,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
-                .loginPage("/login") // Optional: Custom login page
+                .loginPage("/login") 
+                .defaultSuccessUrl("/tasks",true)
                 .permitAll()
             )
             .logout(logout -> logout

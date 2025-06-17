@@ -4,37 +4,66 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Task Board</title>
+
   <link rel="stylesheet" href="/task.css" />
+  <style>
+    #deleteZone {
+      border: 2px dashed #d9534f;
+      color: #d9534f;
+      padding: 1rem;
+      text-align: center;
+      border-radius: .5rem;
+      margin-top: 1.5rem;
+    }
+    #deleteZone.drag-over {
+      background: #fdecea;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Create Task Button -->
   <button class="task" id="openTaskModalBtn">Create Task</button>
 
-  <!-- Task Board Table -->
- <div class="board">
-  <div class="column">
-    <h2>To Do</h2>
-    <ul>
-      <li class="task-card" draggable="true" th:each="task : ${todoTasks}" th:text="${task.description}" th:attr="data-task-id=${task.id}">Sample To Do Task</li>
-    </ul>
-  </div>
-  <div class="column">
-    <h2>In Progress</h2>
-    <ul>
-      <li class="task-card" draggable="true" th:each="task : ${inProgressTasks}" th:text="${task.description}" th:attr="data-task-id=${task.id}">Sample In Progress Task</li>
-    </ul>
-  </div>
-  <div class="column">
-    <h2>Done</h2>
-    <ul>
-      <li class="task-card" draggable="true" th:each="task : ${doneTasks}" th:text="${task.description}" th:attr="data-task-id=${task.id}">Sample Done Task</li>
-    </ul>
-  </div>
-</div>
+  <div class="board">
+    <div class="column">
+      <h2>To Do</h2>
+      <ul>
+        <li class="task-card" draggable="true"
+            th:each="task : ${todoTasks}"
+            th:attr="data-task-id=${task.id}">
+          <strong th:text="${task.title}">Sample To Do Task</strong><br/>
+          <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+        </li>
+      </ul>
+    </div>
 
+    <div class="column">
+      <h2>In Progress</h2>
+      <ul>
+        <li class="task-card" draggable="true"
+            th:each="task : ${inProgressTasks}"
+            th:attr="data-task-id=${task.id}">
+          <strong th:text="${task.title}">Sample In‑Progress Task</strong><br/>
+          <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+        </li>
+      </ul>
+    </div>
 
-  <!-- Modal Markup -->
+    <div class="column">
+      <h2>Done</h2>
+      <ul>
+        <li class="task-card" draggable="true"
+            th:each="task : ${doneTasks}"
+            th:attr="data-task-id=${task.id}">
+          <strong th:text="${task.title}">Sample Done Task</strong><br/>
+          <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="deleteZone"><strong>🗑 Drag here to delete</strong></div>
+
   <div id="taskModal" class="modal">
     <div class="modal-content">
       <span class="close-button">&times;</span>
@@ -57,13 +86,9 @@
     </div>
   </div>
 
-  <script>
-// Make task cards draggable
+<script>
 const tasks = document.querySelectorAll('.task-card');
-tasks.forEach(task => {
-  task.setAttribute('draggable', true);
-  task.addEventListener('dragstart', dragStart);
-});
+tasks.forEach(t => { t.setAttribute('draggable', true); t.addEventListener('dragstart', dragStart); });
 
 function dragStart(e) {
   e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
@@ -78,156 +103,89 @@ function dragOver(e) {
 function drop(e) {
   e.preventDefault();
   const taskId = e.dataTransfer.getData('text/plain');
-  if (!taskId) {
-    alert('No task ID found for dragged element.');
-    return;
-  }
+  if (!taskId) return;
 
-  // Find the column element (assuming .column > h2 + ul)
   const column = e.target.closest('.column');
-  if (!column) {
-    alert('Drop column not found!');
-    return;
-  }
-  const columnTitle = column.querySelector('h2').innerText.trim();
+  if (!column) return;
 
-  const statusMap = {
-    'To Do': 'TO_DO',
-    'In Progress': 'IN_PROGRESS',
-    'Done': 'DONE'
-  };
+  const columnTitle = column.querySelector('h2').innerText.trim();
+  const statusMap = { 'To Do':'TO_DO', 'In Progress':'IN_PROGRESS', 'Done':'DONE' };
   const newStatus = statusMap[columnTitle];
 
-  if (!newStatus) {
-    alert('Invalid column status: ' + columnTitle);
-    return;
-  }
-
   fetch(`/api/tasks/${taskId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: newStatus })
-  })
-  .then(response => {
-    if (!response.ok) throw new Error('Failed to update task status');
-    return response.json();
-  })
-  .then(() => {
-    const dropZone = e.target.closest('ul');
-    if (!dropZone) {
-      alert('Drop zone not found!');
-      return;
-    }
-
-    const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
-    if (card) {
-      dropZone.appendChild(card);
-    } else {
-      console.warn('Card not found for taskId:', taskId);
-    }
-  })
-  .catch(err => {
-    alert(err.message);
-  });
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ status:newStatus })
+  }).then(r=>{ if(!r.ok) throw Error(); })
+    .then(()=>{
+      const dropZone = column.querySelector('ul');
+      const card     = document.querySelector(`.task-card[data-task-id='${taskId}']`);
+      if (card && dropZone) dropZone.appendChild(card);
+    }).catch(()=>alert('Failed to update task status'));
 }
 
-// Attach dragover and drop listeners to each column ul
-const columns = document.querySelectorAll('.column ul');
-columns.forEach(column => {
-  column.addEventListener('dragover', dragOver);
-  column.addEventListener('drop', drop);
+document.querySelectorAll('.column ul').forEach(ul=>{
+  ul.addEventListener('dragover', dragOver);
+  ul.addEventListener('drop',     drop);
 });
 
+const deleteZone = document.getElementById('deleteZone');
+deleteZone.addEventListener('dragover',  e => { e.preventDefault(); deleteZone.classList.add('drag-over'); });
+deleteZone.addEventListener('dragleave', () => deleteZone.classList.remove('drag-over'));
+deleteZone.addEventListener('drop',      deleteDrop);
 
-// Modal and Create Task logic
+function deleteDrop(e) {
+  e.preventDefault();
+  deleteZone.classList.remove('drag-over');
+  const taskId = e.dataTransfer.getData('text/plain');
+  if (!taskId) return;
+  if (!confirm('Delete this task?')) return;
 
-const modal = document.getElementById('taskModal');
-const openModalBtn = document.getElementById('openTaskModalBtn');
-const closeModalBtn = modal.querySelector('.close-button');
-const taskForm = document.getElementById('taskForm');
-
-// Open modal when clicking the "Create Task" button
-openModalBtn.addEventListener('click', () => {
-  modal.style.display = 'flex'; // Show modal using flex (as per your CSS)
-});
-
-// Close modal when clicking the close button
-closeModalBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
-});
-
-// Close modal when clicking outside modal content
-window.addEventListener('click', (event) => {
-  if (event.target === modal) {
-    modal.style.display = 'none';
-  }
-});
-
-// Handle form submission
-function submitTaskForm(event) {
-  event.preventDefault();
-
-  const formData = {
-    title: taskForm.title.value,
-    description: taskForm.description.value,
-    setDate: taskForm.setDate.value,
-    status: "TO_DO"  // Default new tasks to TO_DO
-  };
-
-  fetch('/api/tasks', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formData)
-  })
-  .then(response => {
-    if (!response.ok) throw new Error('Failed to create task');
-    return response.json();
-  })
-  .then(newTask => {
-    // Close modal
-    modal.style.display = 'none';
-
-    // Reset form
-    taskForm.reset();
-
-    // Create new task card element
-    const newTaskCard = document.createElement('li');
-    newTaskCard.classList.add('task-card');
-    newTaskCard.setAttribute('draggable', 'true');
-    newTaskCard.dataset.taskId = newTask.id;
-    newTaskCard.textContent = newTask.description || newTask.title;
-
-    // Add drag event listener
-    newTaskCard.addEventListener('dragstart', dragStart);
-
-    // Append new task card to the To Do column (first column ul)
-    const todoColumnUl = document.querySelector('.column:nth-child(1) ul');
-    todoColumnUl.appendChild(newTaskCard);
-  })
-  .catch(err => {
-    alert(err.message);
-  });
+  fetch(`/api/tasks/${taskId}`, { method:'DELETE' })
+    .then(r => {
+      if (r.ok) {
+        const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
+        if (card) card.remove();
+      } else {
+        alert('Failed to delete task');
+      }
+    })
+    .catch(()=>alert('Failed to delete task'));
 }
 
+const modal          = document.getElementById('taskModal');
+const openModalBtn   = document.getElementById('openTaskModalBtn');
+const closeModalBtn  = modal.querySelector('.close-button');
+const taskForm       = document.getElementById('taskForm');
 
+openModalBtn.onclick = ()=> modal.style.display='flex';
+closeModalBtn.onclick= ()=> modal.style.display='none';
+window.onclick       = e => { if(e.target===modal) modal.style.display='none'; };
 
+function submitTaskForm(e){
+  e.preventDefault();
+  const formData = { title:taskForm.title.value, description:taskForm.description.value,
+                     setDate:taskForm.setDate.value, status:'TO_DO' };
 
+  fetch('/api/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(formData)})
+    .then(r=>{ if(!r.ok) throw Error(); return r.json(); })
+    .then(newTask=>{
+      modal.style.display='none';
+      taskForm.reset();
 
+      const li = document.createElement('li');
+      li.className='task-card';
+      li.setAttribute('draggable','true');
+      li.dataset.taskId = newTask.id;
+      li.innerHTML = `<strong>${newTask.title}</strong><br/><small>Due: ${newTask.setDate || 'N/A'}</small>`;
+      li.addEventListener('dragstart', dragStart);
 
-
-  </script>
-
+      document.querySelector('.column:nth-child(1) ul').appendChild(li);
+    })
+    .catch(()=>alert('Failed to create task'));
+}
+</script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
 
 
