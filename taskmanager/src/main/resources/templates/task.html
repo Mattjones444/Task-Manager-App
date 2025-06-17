@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Task Board</title>
-
   <link rel="stylesheet" href="/task.css" />
   <style>
     #deleteZone {
@@ -30,7 +29,7 @@
       <ul>
         <li class="task-card" draggable="true"
             th:each="task : ${todoTasks}"
-            th:attr="data-task-id=${task.id}">
+            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
           <strong th:text="${task.title}">Sample To Do Task</strong><br/>
           <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
         </li>
@@ -42,7 +41,7 @@
       <ul>
         <li class="task-card" draggable="true"
             th:each="task : ${inProgressTasks}"
-            th:attr="data-task-id=${task.id}">
+            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
           <strong th:text="${task.title}">Sample In‑Progress Task</strong><br/>
           <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
         </li>
@@ -54,7 +53,7 @@
       <ul>
         <li class="task-card" draggable="true"
             th:each="task : ${doneTasks}"
-            th:attr="data-task-id=${task.id}">
+            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
           <strong th:text="${task.title}">Sample Done Task</strong><br/>
           <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
         </li>
@@ -64,11 +63,12 @@
 
   <div id="deleteZone"><strong>🗑 Drag here to delete</strong></div>
 
-  <div id="taskModal" class="modal">
+  <div id="taskModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <span class="close-button">&times;</span>
-      <h2>Create New Task</h2>
-      <form id="taskForm" th:action="@{/api/tasks}" method="post" th:object="${newTask}" onsubmit="submitTaskForm(event)">
+      <span class="close-button" style="cursor:pointer;">&times;</span>
+      <h2 id="modalTitle">Create New Task</h2>
+      <form id="taskForm" onsubmit="submitTaskForm(event)">
+        <input type="hidden" id="editingTaskId" />
         <div class="form-group">
           <label for="taskTitle">Task Title:</label>
           <input type="text" id="taskTitle" name="title" required />
@@ -81,15 +81,22 @@
           <label for="taskDueDate">Schedule Completion Date:</label>
           <input type="date" id="taskDueDate" name="setDate" />
         </div>
-        <button type="submit" class="task">Add Task</button>
+        <button type="submit" class="task" id="submitButton">Add Task</button>
       </form>
     </div>
   </div>
 
 <script>
-const tasks = document.querySelectorAll('.task-card');
-tasks.forEach(t => { t.setAttribute('draggable', true); t.addEventListener('dragstart', dragStart); });
+// Modal elements
+const modal = document.getElementById('taskModal');
+const openModalBtn = document.getElementById('openTaskModalBtn');
+const closeModalBtn = modal.querySelector('.close-button');
+const taskForm = document.getElementById('taskForm');
+const modalTitle = document.getElementById('modalTitle');
+const submitButton = document.getElementById('submitButton');
+const editingTaskIdInput = document.getElementById('editingTaskId');
 
+// Drag & Drop handlers
 function dragStart(e) {
   e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
   e.dataTransfer.effectAllowed = 'move';
@@ -103,45 +110,48 @@ function dragOver(e) {
 function drop(e) {
   e.preventDefault();
   const taskId = e.dataTransfer.getData('text/plain');
-  if (!taskId) return;
-
   const column = e.target.closest('.column');
-  if (!column) return;
+  if (!column || !taskId) return;
 
   const columnTitle = column.querySelector('h2').innerText.trim();
   const statusMap = { 'To Do':'TO_DO', 'In Progress':'IN_PROGRESS', 'Done':'DONE' };
   const newStatus = statusMap[columnTitle];
 
   fetch(`/api/tasks/${taskId}`, {
-    method:'PATCH',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ status:newStatus })
-  }).then(r=>{ if(!r.ok) throw Error(); })
-    .then(()=>{
-      const dropZone = column.querySelector('ul');
-      const card     = document.querySelector(`.task-card[data-task-id='${taskId}']`);
-      if (card && dropZone) dropZone.appendChild(card);
-    }).catch(()=>alert('Failed to update task status'));
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  })
+  .then(r => {
+    if (!r.ok) throw Error();
+    const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
+    if (card) column.querySelector('ul').appendChild(card);
+  })
+  .catch(() => alert('Failed to update task status'));
 }
 
-document.querySelectorAll('.column ul').forEach(ul=>{
+// Attach drag event listeners to columns
+document.querySelectorAll('.column ul').forEach(ul => {
   ul.addEventListener('dragover', dragOver);
-  ul.addEventListener('drop',     drop);
+  ul.addEventListener('drop', drop);
 });
 
+// Delete zone handlers
 const deleteZone = document.getElementById('deleteZone');
-deleteZone.addEventListener('dragover',  e => { e.preventDefault(); deleteZone.classList.add('drag-over'); });
-deleteZone.addEventListener('dragleave', () => deleteZone.classList.remove('drag-over'));
-deleteZone.addEventListener('drop',      deleteDrop);
-
-function deleteDrop(e) {
+deleteZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  deleteZone.classList.add('drag-over');
+});
+deleteZone.addEventListener('dragleave', () => {
+  deleteZone.classList.remove('drag-over');
+});
+deleteZone.addEventListener('drop', e => {
   e.preventDefault();
   deleteZone.classList.remove('drag-over');
   const taskId = e.dataTransfer.getData('text/plain');
-  if (!taskId) return;
-  if (!confirm('Delete this task?')) return;
+  if (!taskId || !confirm('Delete this task?')) return;
 
-  fetch(`/api/tasks/${taskId}`, { method:'DELETE' })
+  fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
     .then(r => {
       if (r.ok) {
         const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
@@ -150,42 +160,101 @@ function deleteDrop(e) {
         alert('Failed to delete task');
       }
     })
-    .catch(()=>alert('Failed to delete task'));
-}
+    .catch(() => alert('Failed to delete task'));
+});
 
-const modal          = document.getElementById('taskModal');
-const openModalBtn   = document.getElementById('openTaskModalBtn');
-const closeModalBtn  = modal.querySelector('.close-button');
-const taskForm       = document.getElementById('taskForm');
+// Modal open/close
+openModalBtn.onclick = () => {
+  modal.style.display = 'flex';
+  modalTitle.textContent = 'Create New Task';
+  submitButton.textContent = 'Add Task';
+  editingTaskIdInput.value = '';
+  taskForm.reset();
+};
+closeModalBtn.onclick = () => {
+  modal.style.display = 'none';
+};
+window.onclick = e => {
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+};
 
-openModalBtn.onclick = ()=> modal.style.display='flex';
-closeModalBtn.onclick= ()=> modal.style.display='none';
-window.onclick       = e => { if(e.target===modal) modal.style.display='none'; };
-
-function submitTaskForm(e){
+// Form submit: create or update task
+function submitTaskForm(e) {
   e.preventDefault();
-  const formData = { title:taskForm.title.value, description:taskForm.description.value,
-                     setDate:taskForm.setDate.value, status:'TO_DO' };
 
-  fetch('/api/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(formData)})
-    .then(r=>{ if(!r.ok) throw Error(); return r.json(); })
-    .then(newTask=>{
-      modal.style.display='none';
-      taskForm.reset();
+  const taskId = editingTaskIdInput.value;
+  const formData = {
+    title: taskForm.title.value,
+    description: taskForm.description.value,
+    setDate: taskForm.setDate.value
+  };
 
-      const li = document.createElement('li');
-      li.className='task-card';
-      li.setAttribute('draggable','true');
-      li.dataset.taskId = newTask.id;
-      li.innerHTML = `<strong>${newTask.title}</strong><br/><small>Due: ${newTask.setDate || 'N/A'}</small>`;
-      li.addEventListener('dragstart', dragStart);
+  const isEdit = !!taskId;
+  const url = isEdit ? `/api/tasks/${taskId}` : '/api/tasks';
+  const method = isEdit ? 'PATCH' : 'POST';
 
-      document.querySelector('.column:nth-child(1) ul').appendChild(li);
-    })
-    .catch(()=>alert('Failed to create task'));
+  fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData)
+  })
+  .then(r => {
+    if (!r.ok) throw Error();
+    return r.json();
+  })
+  .then(task => {
+    modal.style.display = 'none';
+    taskForm.reset();
+
+    let card = document.querySelector(`.task-card[data-task-id='${task.id}']`);
+    if (!card) {
+      card = document.createElement('li');
+      card.className = 'task-card';
+      document.querySelector('.column:nth-child(1) ul').appendChild(card);
+    }
+
+    card.dataset.taskId = task.id;
+    card.dataset.title = task.title || '';
+    card.dataset.description = task.description || '';
+    card.dataset.setDate = task.setDate || '';
+
+    card.innerHTML = `<strong>${task.title}</strong><br/><small>Due: ${task.setDate || 'N/A'}</small>`;
+    attachTaskCardListeners(card);
+  })
+  .catch(() => alert('Failed to save task'));
 }
+
+// Attach event listeners for drag & click on cards
+function attachTaskCardListeners(card) {
+  card.setAttribute('draggable', true);
+  card.addEventListener('dragstart', dragStart);
+
+  card.addEventListener('click', () => {
+    const id = card.dataset.taskId;
+    const title = card.dataset.title || '';
+    const description = card.dataset.description || '';
+    const setDate = card.dataset.setDate || '';
+
+    modalTitle.textContent = 'Edit Task';
+    submitButton.textContent = 'Update Task';
+
+    taskForm.title.value = title;
+    taskForm.description.value = description;
+    taskForm.setDate.value = setDate;
+    editingTaskIdInput.value = id;
+
+    modal.style.display = 'flex';
+  });
+}
+
+// Initialize all existing task cards with listeners
+document.querySelectorAll('.task-card').forEach(attachTaskCardListeners);
 </script>
+
 </body>
 </html>
+
 
 

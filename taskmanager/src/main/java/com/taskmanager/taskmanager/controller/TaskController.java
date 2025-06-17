@@ -15,11 +15,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Controller          // <-- now a regular MVC controller
+@Controller
 public class TaskController {
 
     private final TaskRepository taskRepository;
@@ -32,52 +34,48 @@ public class TaskController {
     }
 
     /* ========================================================
-       1. HTML PAGE  –  GET /tasks
+       1. HTML PAGE – GET /tasks
        ======================================================== */
     @GetMapping("/tasks")
     public String taskBoard(Model model) {
-
-        // Logged‑in user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
         AppUser currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-        // User's tasks grouped by status
         List<Task> userTasks = taskRepository.findByUser(currentUser);
         Map<TaskStatus, List<Task>> grouped = userTasks.stream()
                 .filter(t -> t.getStatus() != null)
                 .collect(Collectors.groupingBy(Task::getStatus));
 
-        model.addAttribute("todoTasks",       grouped.getOrDefault(TaskStatus.TO_DO,        List.of()));
-        model.addAttribute("inProgressTasks", grouped.getOrDefault(TaskStatus.IN_PROGRESS,  List.of()));
-        model.addAttribute("doneTasks",       grouped.getOrDefault(TaskStatus.DONE,        List.of()));
+        model.addAttribute("todoTasks", grouped.getOrDefault(TaskStatus.TO_DO, List.of()));
+        model.addAttribute("inProgressTasks", grouped.getOrDefault(TaskStatus.IN_PROGRESS, List.of()));
+        model.addAttribute("doneTasks", grouped.getOrDefault(TaskStatus.DONE, List.of()));
 
-        return "task";           // -> templates/task.html
+        return "task";
     }
 
     /* ========================================================
-       2. REST ENDPOINTS  –  still under /api/tasks
+       2. REST ENDPOINTS – under /api/tasks
        ======================================================== */
 
     // POST /api/tasks
-@PostMapping("/api/tasks")
-@ResponseBody
-public ResponseEntity<Task> createTask(@RequestBody Task newTask) {
+    @PostMapping("/api/tasks")
+    @ResponseBody
+    public ResponseEntity<Task> createTask(@RequestBody Task newTask) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = auth.getName();
 
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    String currentUsername = auth.getName();
+        AppUser currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found: " + currentUsername));
 
-    AppUser currentUser = userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new RuntimeException("User not found: " + currentUsername));
+        newTask.setUser(currentUser);
+        newTask.setStatus(TaskStatus.TO_DO);
+        Task saved = taskRepository.save(newTask);
 
-    newTask.setUser(currentUser);
-    newTask.setStatus(TaskStatus.TO_DO);  
-    Task saved = taskRepository.save(newTask);
-
-    return new ResponseEntity<>(saved, HttpStatus.CREATED);
-}
+        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+    }
 
     // GET /api/tasks
     @GetMapping("/api/tasks")
@@ -93,36 +91,51 @@ public ResponseEntity<Task> createTask(@RequestBody Task newTask) {
         return userRepository.findAll();
     }
 
-@PatchMapping("/api/tasks/{id}")
-public ResponseEntity<Task> updateTaskStatus(@PathVariable Long id, @RequestBody Map<String, String> updates) {
-    Task task = taskRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+    // PATCH /api/tasks/{id}
+    @PatchMapping("/api/tasks/{id}")
+    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Map<String, String> updates) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
 
-    if (updates.containsKey("status")) {
-        String statusStr = updates.get("status").toUpperCase().replaceAll("\\s", "_"); // normalize string
-
-        TaskStatus newStatus;
-        try {
-            newStatus = TaskStatus.valueOf(statusStr);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status value: " + statusStr);
+        if (updates.containsKey("status")) {
+            String statusStr = updates.get("status").toUpperCase().replaceAll("\\s", "_");
+            try {
+                task.setStatus(TaskStatus.valueOf(statusStr));
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status value: " + statusStr);
+            }
         }
 
-        task.setStatus(newStatus);
+        if (updates.containsKey("title")) {
+            task.setTitle(updates.get("title"));
+        }
+
+        if (updates.containsKey("description")) {
+            task.setDescription(updates.get("description"));
+        }
+
+        if (updates.containsKey("setDate")) {
+            String dateStr = updates.get("setDate");
+            try {
+                task.setSetDate(LocalDate.parse(dateStr));
+            } catch (DateTimeParseException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date format: " + dateStr);
+            }
+        }
+
+        Task updated = taskRepository.save(task);
+        return ResponseEntity.ok(updated);
     }
 
-    Task updated = taskRepository.save(task);
-    return ResponseEntity.ok(updated);
-}
-
-@DeleteMapping("/api/tasks/{id}")
-public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-    if (taskRepository.existsById(id)) {
-        taskRepository.deleteById(id);
-        return ResponseEntity.noContent().build(); // 204 No Content
-    } else {
-        return ResponseEntity.notFound().build();  // 404 Not Found
+    // DELETE /api/tasks/{id}
+    @DeleteMapping("/api/tasks/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+        if (taskRepository.existsById(id)) {
+            taskRepository.deleteById(id);
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } else {
+            return ResponseEntity.notFound().build();  // 404 Not Found
+        }
     }
 }
 
-}
