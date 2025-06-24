@@ -2,6 +2,7 @@ package com.taskmanager.taskmanager.controller;
 
 import com.taskmanager.model.AppUser;
 import com.taskmanager.model.Task;
+import com.taskmanager.model.TaskPriority;
 import com.taskmanager.model.TaskStatus;
 import com.taskmanager.repository.TaskRepository;
 import com.taskmanager.repository.UserRepository;
@@ -58,7 +59,7 @@ public class TaskController {
         // Debug output
         System.out.println("DEBUG: Tasks sorted by date for user '" + username + "':");
         for (Task task : sortedByDate) {
-            System.out.println("- " + task.getTitle() + " | " + task.getSetDate() + " | Status: " + task.getStatus());
+            System.out.println("- " + task.getTitle() + " | " + task.getSetDate() + " | Status: " + task.getStatus() + " | Priority: " + task.getPriority());
         }
 
         model.addAttribute("allTasksSortedByDate", sortedByDate);
@@ -82,6 +83,12 @@ public class TaskController {
 
         newTask.setUser(currentUser);
         newTask.setStatus(TaskStatus.TO_DO);
+
+        // Default to MEDIUM priority if none provided
+        if (newTask.getPriority() == null) {
+            newTask.setPriority(TaskPriority.MEDIUM);
+        }
+
         Task saved = taskRepository.save(newTask);
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
@@ -119,6 +126,13 @@ public class TaskController {
                         // Ignore invalid status
                     }
                     break;
+                case "priority":
+                    try {
+                        task.setPriority(TaskPriority.valueOf(((String) value).toUpperCase()));
+                    } catch (Exception e) {
+                        // Ignore invalid priority
+                    }
+                    break;
             }
         });
 
@@ -139,5 +153,6 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 }
+
 
 

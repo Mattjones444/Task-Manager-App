@@ -18,32 +18,36 @@ public class Task {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private TaskStatus status;  // new status field
-    
+    private TaskStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private TaskPriority priority;  // ✅ New field
+
     private LocalDate setDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-     @JsonIgnore
+    @JsonIgnore
     @JoinColumn(name = "user_id")
     private AppUser user;
 
     @Column(nullable = false)
-    private boolean complete = false;  // new complete field with default false
+    private boolean complete = false;
 
     public Task() {}
 
-    public Task(Long id, String title, String description, AppUser user, TaskStatus status, LocalDate setDate, boolean complete) {
+    public Task(Long id, String title, String description, AppUser user, TaskStatus status, TaskPriority priority, LocalDate setDate, boolean complete) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.user = user;
         this.status = status;
+        this.priority = priority;
         this.setDate = setDate;
         this.complete = complete;
     }
 
     // Getters and setters
-    
+
     public Long getId() {
         return id;
     }
@@ -76,6 +80,14 @@ public class Task {
         this.status = status;
     }
 
+    public TaskPriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(TaskPriority priority) {
+        this.priority = priority;
+    }
+
     public LocalDate getSetDate() {
         return setDate;
     }
@@ -100,6 +112,7 @@ public class Task {
         this.complete = complete;
     }
 }
+
 
 
 

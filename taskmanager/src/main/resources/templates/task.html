@@ -17,6 +17,19 @@
     #deleteZone.drag-over {
       background: #fdecea;
     }
+    .priority-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+    .task-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+}
   </style>
 </head>
 <body>
@@ -31,8 +44,13 @@
       <ul>
         <li class="task-card" draggable="true"
             th:each="task : ${todoTasks}"
-            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
-          <strong th:text="${task.title}">Sample To Do Task</strong><br/>
+            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
+          <div class="task-header">
+            <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
+            <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
+            <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
+            <strong th:text="${task.title}">Sample To Do Task</strong>
+          </div>
           <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
         </li>
       </ul>
@@ -43,8 +61,13 @@
       <ul>
         <li class="task-card" draggable="true"
             th:each="task : ${inProgressTasks}"
-            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
-          <strong th:text="${task.title}">Sample In‑Progress Task</strong><br/>
+            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
+         <div class="task-header" th:switch="${task.priority.name()}">
+         <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
+         <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
+         <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
+         <strong th:text="${task.title}">Sample Task</strong>
+         </div>
           <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
         </li>
       </ul>
@@ -55,8 +78,13 @@
       <ul>
         <li class="task-card" draggable="true"
             th:each="task : ${doneTasks}"
-            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
-          <strong th:text="${task.title}">Sample Done Task</strong><br/>
+            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
+          <div class="task-header">
+            <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
+            <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
+            <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
+            <strong th:text="${task.title}">Sample Done Task</strong>
+          </div>
           <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
         </li>
       </ul>
@@ -69,8 +97,13 @@
     <ul>
       <li class="task-card"
           th:each="task : ${allTasksSortedByDate}"
-          th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
-        <strong th:text="${task.title}">Sample Task</strong><br/>
+          th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
+        <div class="task-header">
+          <span class="priority-dot" th:if="${task.priority == 'HIGH'}" style="background-color: red;"></span>
+          <span class="priority-dot" th:if="${task.priority == 'MEDIUM'}" style="background-color: orange;"></span>
+          <span class="priority-dot" th:if="${task.priority == 'LOW'}" style="background-color: green;"></span>
+          <strong th:text="${task.title}">Sample Task</strong>
+        </div>
         <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
       </li>
     </ul>
@@ -78,6 +111,7 @@
 
   <div id="deleteZone"><strong>🗑 Drag here to delete</strong></div>
 
+    <!-- Modal -->
   <div id="taskModal" class="modal" style="display:none;">
     <div class="modal-content">
       <span class="close-button" style="cursor:pointer;">&times;</span>
@@ -95,6 +129,15 @@
         <div class="form-group">
           <label for="taskDueDate">Schedule Completion Date:</label>
           <input type="date" id="taskDueDate" name="setDate" />
+        </div>
+        <div class="form-group">
+          <label for="taskPriority">Priority:</label>
+          <select id="taskPriority" name="priority" required>
+            <option value="">Select Priority</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
         </div>
         <button type="submit" class="task" id="submitButton">Add Task</button>
       </form>
@@ -196,7 +239,8 @@ function submitTaskForm(e) {
   const formData = {
     title: taskForm.title.value,
     description: taskForm.description.value,
-    setDate: taskForm.setDate.value
+    setDate: taskForm.setDate.value,
+    priority: taskForm.priority.value
   };
 
   const isEdit = !!taskId;
@@ -215,23 +259,7 @@ function submitTaskForm(e) {
   .then(task => {
     modal.style.display = 'none';
     taskForm.reset();
-
-    let card = document.querySelector(`.task-card[data-task-id='${task.id}']`);
-    if (!card) {
-      card = document.createElement('li');
-      card.className = 'task-card';
-      document.querySelector('.column:nth-child(1) ul').appendChild(card);
-    }
-
-    card.dataset.taskId = task.id;
-    card.dataset.title = task.title || '';
-    card.dataset.description = task.description || '';
-    card.dataset.setDate = task.setDate || '';
-
-    card.innerHTML = `<strong>${task.title}</strong><br/><small>Due: ${task.setDate || 'N/A'}</small>`;
-    card.setAttribute('draggable', 'true');
-    card.ondragstart = dragStart;
-    card.onclick = () => openEditModal(card);
+    window.location.reload(); // reload for simplicity to show changes
   })
   .catch(() => alert('Failed to save task'));
 }
@@ -246,6 +274,7 @@ function openEditModal(card) {
   taskForm.title.value = card.dataset.title || '';
   taskForm.description.value = card.dataset.description || '';
   taskForm.setDate.value = card.dataset.setDate || '';
+  taskForm.priority.value = card.dataset.priority || '';
 }
 
 // Attach events to existing tasks
@@ -270,6 +299,8 @@ function toggleView() {
 
 </body>
 </html>
+
+
 
 
 
