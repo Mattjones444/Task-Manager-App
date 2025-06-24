@@ -34,8 +34,15 @@
 </head>
 <body>
 
-  <button class="task" id="openTaskModalBtn">Create Task</button>
-  <button class="task" onclick="toggleView()">Toggle View</button>
+    <div class="top-bar">
+    <div>
+      <button class="task" id="openTaskModalBtn">Create Task</button>
+      <button class="task" onclick="toggleView()">Toggle View</button>
+    </div>
+    <form th:action="@{/logout}" method="post" style="margin: 0;">
+      <button type="submit" class="task">Logout</button>
+    </form>
+  </div>
 
   <!-- Kanban view -->
   <div class="board" style="display: flex;">
