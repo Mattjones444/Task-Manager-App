@@ -13,12 +13,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -27,14 +23,13 @@ public class TaskController {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
 
-    public TaskController(TaskRepository taskRepository,
-                          UserRepository userRepository) {
+    public TaskController(TaskRepository taskRepository, UserRepository userRepository) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
     }
 
     /* ========================================================
-       1. HTML PAGE – GET /tasks
+       1. HTML PAGE – GET /tasks (uses same HTML file)
        ======================================================== */
     @GetMapping("/tasks")
     public String taskBoard(Model model) {
@@ -45,6 +40,8 @@ public class TaskController {
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
         List<Task> userTasks = taskRepository.findByUser(currentUser);
+
+        // Status-based grouping
         Map<TaskStatus, List<Task>> grouped = userTasks.stream()
                 .filter(t -> t.getStatus() != null)
                 .collect(Collectors.groupingBy(Task::getStatus));
@@ -53,7 +50,20 @@ public class TaskController {
         model.addAttribute("inProgressTasks", grouped.getOrDefault(TaskStatus.IN_PROGRESS, List.of()));
         model.addAttribute("doneTasks", grouped.getOrDefault(TaskStatus.DONE, List.of()));
 
-        return "task";
+        // Date-based sorting
+        List<Task> sortedByDate = userTasks.stream()
+                .sorted(Comparator.comparing(Task::getSetDate))
+                .collect(Collectors.toList());
+
+        // Debug output
+        System.out.println("DEBUG: Tasks sorted by date for user '" + username + "':");
+        for (Task task : sortedByDate) {
+            System.out.println("- " + task.getTitle() + " | " + task.getSetDate() + " | Status: " + task.getStatus());
+        }
+
+        model.addAttribute("allTasksSortedByDate", sortedByDate);
+
+        return "task";  // single Thymeleaf template
     }
 
     /* ========================================================
@@ -73,69 +83,61 @@ public class TaskController {
         newTask.setUser(currentUser);
         newTask.setStatus(TaskStatus.TO_DO);
         Task saved = taskRepository.save(newTask);
-
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
-
-    // GET /api/tasks
-    @GetMapping("/api/tasks")
-    @ResponseBody
-    public Iterable<Task> getAllTasks() {
-        return taskRepository.findAll();
-    }
-
-    // GET /api/tasks/users
-    @GetMapping("/api/tasks/users")
-    @ResponseBody
-    public Iterable<AppUser> getAllUsers() {
-        return userRepository.findAll();
     }
 
     // PATCH /api/tasks/{id}
     @PatchMapping("/api/tasks/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Map<String, String> updates) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+    @ResponseBody
+    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        Optional<Task> optionalTask = taskRepository.findById(id);
+        if (optionalTask.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
 
-        if (updates.containsKey("status")) {
-            String statusStr = updates.get("status").toUpperCase().replaceAll("\\s", "_");
-            try {
-                task.setStatus(TaskStatus.valueOf(statusStr));
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status value: " + statusStr);
+        Task task = optionalTask.get();
+
+        updates.forEach((key, value) -> {
+            switch (key) {
+                case "title":
+                    task.setTitle((String) value);
+                    break;
+                case "description":
+                    task.setDescription((String) value);
+                    break;
+                case "setDate":
+                    try {
+                        task.setSetDate(java.time.LocalDate.parse((String) value));
+                    } catch (Exception e) {
+                        // Ignore or handle error
+                    }
+                    break;
+                case "status":
+                    try {
+                        task.setStatus(TaskStatus.valueOf((String) value));
+                    } catch (Exception e) {
+                        // Ignore invalid status
+                    }
+                    break;
             }
-        }
+        });
 
-        if (updates.containsKey("title")) {
-            task.setTitle(updates.get("title"));
-        }
-
-        if (updates.containsKey("description")) {
-            task.setDescription(updates.get("description"));
-        }
-
-        if (updates.containsKey("setDate")) {
-            String dateStr = updates.get("setDate");
-            try {
-                task.setSetDate(LocalDate.parse(dateStr));
-            } catch (DateTimeParseException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date format: " + dateStr);
-            }
-        }
-
-        Task updated = taskRepository.save(task);
-        return ResponseEntity.ok(updated);
+        Task saved = taskRepository.save(task);
+        return ResponseEntity.ok(saved);
     }
 
     // DELETE /api/tasks/{id}
     @DeleteMapping("/api/tasks/{id}")
+    @ResponseBody
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        if (taskRepository.existsById(id)) {
-            taskRepository.deleteById(id);
-            return ResponseEntity.noContent().build(); // 204 No Content
-        } else {
-            return ResponseEntity.notFound().build();  // 404 Not Found
+        Optional<Task> optionalTask = taskRepository.findById(id);
+        if (optionalTask.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
+
+        taskRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
+
 

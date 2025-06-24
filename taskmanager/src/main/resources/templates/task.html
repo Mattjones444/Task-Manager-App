@@ -22,8 +22,10 @@
 <body>
 
   <button class="task" id="openTaskModalBtn">Create Task</button>
+  <button class="task" onclick="toggleView()">Toggle View</button>
 
-  <div class="board">
+  <!-- Kanban view -->
+  <div class="board" style="display: flex;">
     <div class="column">
       <h2>To Do</h2>
       <ul>
@@ -61,6 +63,19 @@
     </div>
   </div>
 
+  <!-- List view -->
+  <div class="list-view" style="display: none;">
+    <h2>All Tasks (List View)</h2>
+    <ul>
+      <li class="task-card"
+          th:each="task : ${allTasksSortedByDate}"
+          th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}">
+        <strong th:text="${task.title}">Sample Task</strong><br/>
+        <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+      </li>
+    </ul>
+  </div>
+
   <div id="deleteZone"><strong>🗑 Drag here to delete</strong></div>
 
   <div id="taskModal" class="modal" style="display:none;">
@@ -87,7 +102,6 @@
   </div>
 
 <script>
-// Modal elements
 const modal = document.getElementById('taskModal');
 const openModalBtn = document.getElementById('openTaskModalBtn');
 const closeModalBtn = modal.querySelector('.close-button');
@@ -96,17 +110,14 @@ const modalTitle = document.getElementById('modalTitle');
 const submitButton = document.getElementById('submitButton');
 const editingTaskIdInput = document.getElementById('editingTaskId');
 
-// Drag & Drop handlers
 function dragStart(e) {
   e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
   e.dataTransfer.effectAllowed = 'move';
 }
-
 function dragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
 }
-
 function drop(e) {
   e.preventDefault();
   const taskId = e.dataTransfer.getData('text/plain');
@@ -114,7 +125,7 @@ function drop(e) {
   if (!column || !taskId) return;
 
   const columnTitle = column.querySelector('h2').innerText.trim();
-  const statusMap = { 'To Do':'TO_DO', 'In Progress':'IN_PROGRESS', 'Done':'DONE' };
+  const statusMap = { 'To Do': 'TO_DO', 'In Progress': 'IN_PROGRESS', 'Done': 'DONE' };
   const newStatus = statusMap[columnTitle];
 
   fetch(`/api/tasks/${taskId}`, {
@@ -130,13 +141,11 @@ function drop(e) {
   .catch(() => alert('Failed to update task status'));
 }
 
-// Attach drag event listeners to columns
 document.querySelectorAll('.column ul').forEach(ul => {
   ul.addEventListener('dragover', dragOver);
   ul.addEventListener('drop', drop);
 });
 
-// Delete zone handlers
 const deleteZone = document.getElementById('deleteZone');
 deleteZone.addEventListener('dragover', e => {
   e.preventDefault();
@@ -163,7 +172,7 @@ deleteZone.addEventListener('drop', e => {
     .catch(() => alert('Failed to delete task'));
 });
 
-// Modal open/close
+// Open modal for new task
 openModalBtn.onclick = () => {
   modal.style.display = 'flex';
   modalTitle.textContent = 'Create New Task';
@@ -171,16 +180,15 @@ openModalBtn.onclick = () => {
   editingTaskIdInput.value = '';
   taskForm.reset();
 };
+// Close modal
 closeModalBtn.onclick = () => {
   modal.style.display = 'none';
 };
 window.onclick = e => {
-  if (e.target === modal) {
-    modal.style.display = 'none';
-  }
+  if (e.target === modal) modal.style.display = 'none';
 };
 
-// Form submit: create or update task
+// Submit task (create or update)
 function submitTaskForm(e) {
   e.preventDefault();
 
@@ -221,40 +229,52 @@ function submitTaskForm(e) {
     card.dataset.setDate = task.setDate || '';
 
     card.innerHTML = `<strong>${task.title}</strong><br/><small>Due: ${task.setDate || 'N/A'}</small>`;
-    attachTaskCardListeners(card);
+    card.setAttribute('draggable', 'true');
+    card.ondragstart = dragStart;
+    card.onclick = () => openEditModal(card);
   })
   .catch(() => alert('Failed to save task'));
 }
 
-// Attach event listeners for drag & click on cards
-function attachTaskCardListeners(card) {
-  card.setAttribute('draggable', true);
-  card.addEventListener('dragstart', dragStart);
+// Open modal with task data for editing
+function openEditModal(card) {
+  modal.style.display = 'flex';
+  modalTitle.textContent = 'Edit Task';
+  submitButton.textContent = 'Update Task';
 
-  card.addEventListener('click', () => {
-    const id = card.dataset.taskId;
-    const title = card.dataset.title || '';
-    const description = card.dataset.description || '';
-    const setDate = card.dataset.setDate || '';
-
-    modalTitle.textContent = 'Edit Task';
-    submitButton.textContent = 'Update Task';
-
-    taskForm.title.value = title;
-    taskForm.description.value = description;
-    taskForm.setDate.value = setDate;
-    editingTaskIdInput.value = id;
-
-    modal.style.display = 'flex';
-  });
+  editingTaskIdInput.value = card.dataset.taskId;
+  taskForm.title.value = card.dataset.title || '';
+  taskForm.description.value = card.dataset.description || '';
+  taskForm.setDate.value = card.dataset.setDate || '';
 }
 
-// Initialize all existing task cards with listeners
-document.querySelectorAll('.task-card').forEach(attachTaskCardListeners);
+// Attach events to existing tasks
+document.querySelectorAll('.task-card').forEach(card => {
+  card.ondragstart = dragStart;
+  card.onclick = () => openEditModal(card);
+});
+
+// Toggle between Kanban and List views
+function toggleView() {
+  const board = document.querySelector('.board');
+  const listView = document.querySelector('.list-view');
+  if (board.style.display === 'none') {
+    board.style.display = 'flex';
+    listView.style.display = 'none';
+  } else {
+    board.style.display = 'none';
+    listView.style.display = 'block';
+  }
+}
 </script>
 
 </body>
 </html>
+
+
+
+
+
 
 
 
