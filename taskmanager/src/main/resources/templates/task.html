@@ -29,283 +29,376 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-}
+    }
+    .pomodoro-btn {
+      margin-top: 0.5rem;
+      background-color: #f4f4f4;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    .pomodoro-btn:hover {
+      background-color: #e6e6e6;
+    }
   </style>
 </head>
 <body>
 
-    <div class="top-bar">
-    <div>
-      <button class="task" id="openTaskModalBtn">Create Task</button>
-      <button class="task" onclick="toggleView()">Toggle View</button>
-    </div>
-    <form th:action="@{/logout}" method="post" style="margin: 0;">
-      <button type="submit" class="task">Logout</button>
-    </form>
+<div class="top-bar">
+  <div>
+    <button class="task" id="openTaskModalBtn">Create Task</button>
+    <button class="task" onclick="toggleView()">Toggle View</button>
   </div>
+  <form th:action="@{/logout}" method="post" style="margin: 0;">
+    <button type="submit" class="task">Logout</button>
+  </form>
+</div>
 
-  <!-- Kanban view -->
-  <div class="board" style="display: flex;">
-    <div class="column">
-      <h2>To Do</h2>
-      <ul>
-        <li class="task-card" draggable="true"
-            th:each="task : ${todoTasks}"
-            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
-          <div class="task-header">
-            <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
-            <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
-            <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
-            <strong th:text="${task.title}">Sample To Do Task</strong>
-          </div>
-          <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
-        </li>
-      </ul>
-    </div>
-
-    <div class="column">
-      <h2>In Progress</h2>
-      <ul>
-        <li class="task-card" draggable="true"
-            th:each="task : ${inProgressTasks}"
-            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
-         <div class="task-header" th:switch="${task.priority.name()}">
-         <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
-         <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
-         <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
-         <strong th:text="${task.title}">Sample Task</strong>
-         </div>
-          <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
-        </li>
-      </ul>
-    </div>
-
-    <div class="column">
-      <h2>Done</h2>
-      <ul>
-        <li class="task-card" draggable="true"
-            th:each="task : ${doneTasks}"
-            th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
-          <div class="task-header">
-            <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
-            <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
-            <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
-            <strong th:text="${task.title}">Sample Done Task</strong>
-          </div>
-          <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- List view -->
-  <div class="list-view" style="display: none;">
-    <h2>All Tasks (List View)</h2>
+<!-- Kanban view -->
+<div class="board" style="display: flex;">
+  <div class="column">
+    <h2>To Do</h2>
     <ul>
-      <li class="task-card"
-          th:each="task : ${allTasksSortedByDate}"
+      <li class="task-card" draggable="true"
+          th:each="task : ${todoTasks}"
           th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
         <div class="task-header">
-          <span class="priority-dot" th:if="${task.priority == 'HIGH'}" style="background-color: red;"></span>
-          <span class="priority-dot" th:if="${task.priority == 'MEDIUM'}" style="background-color: orange;"></span>
-          <span class="priority-dot" th:if="${task.priority == 'LOW'}" style="background-color: green;"></span>
-          <strong th:text="${task.title}">Sample Task</strong>
+          <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
+          <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
+          <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
+          <strong th:text="${task.title}">Sample To Do Task</strong>
         </div>
         <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+        <button class="pomodoro-btn" th:attr="data-task-title=${task.title}">⏱ Start Pomodoro</button>
       </li>
     </ul>
   </div>
 
-  <div id="deleteZone"><strong>🗑 Drag here to delete</strong></div>
-
-    <!-- Modal -->
-  <div id="taskModal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close-button" style="cursor:pointer;">&times;</span>
-      <h2 id="modalTitle">Create New Task</h2>
-      <form id="taskForm" onsubmit="submitTaskForm(event)">
-        <input type="hidden" id="editingTaskId" />
-        <div class="form-group">
-          <label for="taskTitle">Task Title:</label>
-          <input type="text" id="taskTitle" name="title" required />
+  <div class="column">
+    <h2>In Progress</h2>
+    <ul>
+      <li class="task-card" draggable="true"
+          th:each="task : ${inProgressTasks}"
+          th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
+        <div class="task-header" th:switch="${task.priority.name()}">
+          <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
+          <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
+          <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
+          <strong th:text="${task.title}">Sample Task</strong>
         </div>
-        <div class="form-group">
-          <label for="taskDescription">Description:</label>
-          <textarea id="taskDescription" name="description" rows="4"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="taskDueDate">Schedule Completion Date:</label>
-          <input type="date" id="taskDueDate" name="setDate" />
-        </div>
-        <div class="form-group">
-          <label for="taskPriority">Priority:</label>
-          <select id="taskPriority" name="priority" required>
-            <option value="">Select Priority</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
-          </select>
-        </div>
-        <button type="submit" class="task" id="submitButton">Add Task</button>
-      </form>
-    </div>
+        <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+        <button class="pomodoro-btn" th:attr="data-task-title=${task.title}">⏱ Start Pomodoro</button>
+      </li>
+    </ul>
   </div>
 
+  <div class="column">
+    <h2>Done</h2>
+    <ul>
+      <li class="task-card" draggable="true"
+          th:each="task : ${doneTasks}"
+          th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
+        <div class="task-header">
+          <span class="priority-dot" th:if="${task.priority.name() == 'HIGH'}" style="background-color: red;"></span>
+          <span class="priority-dot" th:if="${task.priority.name() == 'MEDIUM'}" style="background-color: orange;"></span>
+          <span class="priority-dot" th:if="${task.priority.name() == 'LOW'}" style="background-color: green;"></span>
+          <strong th:text="${task.title}">Sample Done Task</strong>
+        </div>
+        <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+        <button class="pomodoro-btn" th:attr="data-task-title=${task.title}">⏱ Start Pomodoro</button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- List view -->
+<div class="list-view" style="display: none;">
+  <h2>All Tasks (List View)</h2>
+  <ul>
+    <li class="task-card"
+        th:each="task : ${allTasksSortedByDate}"
+        th:attr="data-task-id=${task.id}, data-title=${task.title}, data-description=${task.description}, data-set-date=${task.setDate}, data-priority=${task.priority}">
+      <div class="task-header">
+        <span class="priority-dot" th:if="${task.priority == 'HIGH'}" style="background-color: red;"></span>
+        <span class="priority-dot" th:if="${task.priority == 'MEDIUM'}" style="background-color: orange;"></span>
+        <span class="priority-dot" th:if="${task.priority == 'LOW'}" style="background-color: green;"></span>
+        <strong th:text="${task.title}">Sample Task</strong>
+      </div>
+      <small th:text="'Due: ' + ${task.setDate}">Due: 2025-06-17</small>
+      <button class="pomodoro-btn" th:attr="data-task-title=${task.title}">⏱ Start Pomodoro</button>
+    </li>
+  </ul>
+</div>
+
+<div id="deleteZone"><strong>🗑 Drag here to delete</strong></div>
+
+<!-- Task Modal -->
+<div id="taskModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <h2 id="modalTitle">Create New Task</h2>
+    <form id="taskForm">
+      <input type="hidden" id="editingTaskId" name="editingTaskId" />
+
+      <div class="form-group">
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" required />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description:</label>
+        <textarea id="description" name="description"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="setDate">Due Date:</label>
+        <input type="date" id="setDate" name="setDate" required />
+      </div>
+
+      <div class="form-group">
+        <label for="priority">Priority:</label>
+        <select id="priority" name="priority" required>
+          <option value="">Select...</option>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HIGH">High</option>
+        </select>
+      </div>
+
+      <button type="submit" id="submitButton">Add Task</button>
+    </form>
+  </div>
+</div>
+
+
+<!-- Pomodoro Timer UI -->
+<div id="pomodoroOverlay" class="pomodoro-overlay" style="display: none;">
+  <div class="pomodoro-center-box">
+    <h2 id="pomodoroTask">Pomodoro Timer</h2>
+    <div id="pomodoroCountdown">25:00</div>
+    <button onclick="stopPomodoro()">Stop</button>
+  </div>
+</div>
+
+<!-- Scripts -->
 <script>
-const modal = document.getElementById('taskModal');
-const openModalBtn = document.getElementById('openTaskModalBtn');
-const closeModalBtn = modal.querySelector('.close-button');
-const taskForm = document.getElementById('taskForm');
-const modalTitle = document.getElementById('modalTitle');
-const submitButton = document.getElementById('submitButton');
-const editingTaskIdInput = document.getElementById('editingTaskId');
+  document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('taskModal');
+  const openModalBtn = document.getElementById('openTaskModalBtn');
+  const closeModalBtn = modal?.querySelector('.close-button');
+  const taskForm = document.getElementById('taskForm');
+  const modalTitle = document.getElementById('modalTitle');
+  const submitButton = document.getElementById('submitButton');
+  const editingTaskIdInput = document.getElementById('editingTaskId');
 
-function dragStart(e) {
-  e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
-  e.dataTransfer.effectAllowed = 'move';
-}
-function dragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-function drop(e) {
-  e.preventDefault();
-  const taskId = e.dataTransfer.getData('text/plain');
-  const column = e.target.closest('.column');
-  if (!column || !taskId) return;
+  // Drag-and-drop functions
+  function dragStart(e) {
+    e.dataTransfer.setData('text/plain', e.target.dataset.taskId);
+    e.dataTransfer.effectAllowed = 'move';
+  }
 
-  const columnTitle = column.querySelector('h2').innerText.trim();
-  const statusMap = { 'To Do': 'TO_DO', 'In Progress': 'IN_PROGRESS', 'Done': 'DONE' };
-  const newStatus = statusMap[columnTitle];
+  function dragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
 
-  fetch(`/api/tasks/${taskId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: newStatus })
-  })
-  .then(r => {
-    if (!r.ok) throw Error();
-    const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
-    if (card) column.querySelector('ul').appendChild(card);
-  })
-  .catch(() => alert('Failed to update task status'));
-}
+  function drop(e) {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('text/plain');
+    const column = e.target.closest('.column');
+    if (!column || !taskId) return;
 
-document.querySelectorAll('.column ul').forEach(ul => {
-  ul.addEventListener('dragover', dragOver);
-  ul.addEventListener('drop', drop);
-});
+    const columnTitle = column.querySelector('h2').innerText.trim();
+    const statusMap = { 'To Do': 'TO_DO', 'In Progress': 'IN_PROGRESS', 'Done': 'DONE' };
+    const newStatus = statusMap[columnTitle];
 
-const deleteZone = document.getElementById('deleteZone');
-deleteZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  deleteZone.classList.add('drag-over');
-});
-deleteZone.addEventListener('dragleave', () => {
-  deleteZone.classList.remove('drag-over');
-});
-deleteZone.addEventListener('drop', e => {
-  e.preventDefault();
-  deleteZone.classList.remove('drag-over');
-  const taskId = e.dataTransfer.getData('text/plain');
-  if (!taskId || !confirm('Delete this task?')) return;
-
-  fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
-    .then(r => {
-      if (r.ok) {
-        const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
-        if (card) card.remove();
-      } else {
-        alert('Failed to delete task');
-      }
+    fetch(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
     })
-    .catch(() => alert('Failed to delete task'));
-});
+    .then(r => {
+      if (!r.ok) throw Error();
+      const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
+      if (card) column.querySelector('ul').appendChild(card);
+    })
+    .catch(() => alert('Failed to update task status'));
+  }
 
-// Open modal for new task
-openModalBtn.onclick = () => {
-  modal.style.display = 'flex';
-  modalTitle.textContent = 'Create New Task';
-  submitButton.textContent = 'Add Task';
-  editingTaskIdInput.value = '';
-  taskForm.reset();
-};
-// Close modal
-closeModalBtn.onclick = () => {
-  modal.style.display = 'none';
-};
-window.onclick = e => {
-  if (e.target === modal) modal.style.display = 'none';
-};
+  document.querySelectorAll('.column ul').forEach(ul => {
+    ul.addEventListener('dragover', dragOver);
+    ul.addEventListener('drop', drop);
+  });
 
-// Submit task (create or update)
-function submitTaskForm(e) {
-  e.preventDefault();
+  const deleteZone = document.getElementById('deleteZone');
+  deleteZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    deleteZone.classList.add('drag-over');
+  });
+  deleteZone.addEventListener('dragleave', () => {
+    deleteZone.classList.remove('drag-over');
+  });
+  deleteZone.addEventListener('drop', e => {
+    e.preventDefault();
+    deleteZone.classList.remove('drag-over');
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (!taskId || !confirm('Delete this task?')) return;
 
-  const taskId = editingTaskIdInput.value;
-  const formData = {
-    title: taskForm.title.value,
-    description: taskForm.description.value,
-    setDate: taskForm.setDate.value,
-    priority: taskForm.priority.value
+    fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+      .then(r => {
+        if (r.ok) {
+          const card = document.querySelector(`.task-card[data-task-id='${taskId}']`);
+          if (card) card.remove();
+        } else {
+          alert('Failed to delete task');
+        }
+      })
+      .catch(() => alert('Failed to delete task'));
+  });
+
+  // Task modal
+  if (openModalBtn) {
+    openModalBtn.onclick = () => {
+      modal.style.display = 'flex';
+      modalTitle.textContent = 'Create New Task';
+      submitButton.textContent = 'Add Task';
+      editingTaskIdInput.value = '';
+      taskForm.reset();
+    };
+  }
+
+  if (closeModalBtn) {
+    closeModalBtn.onclick = () => {
+      modal.style.display = 'none';
+    };
+  }
+
+  window.onclick = e => {
+    if (e.target === modal) modal.style.display = 'none';
   };
 
-  const isEdit = !!taskId;
-  const url = isEdit ? `/api/tasks/${taskId}` : '/api/tasks';
-  const method = isEdit ? 'PATCH' : 'POST';
+  // Open edit modal
+  function openEditModal(card) {
+    modal.style.display = 'flex';
+    modalTitle.textContent = 'Edit Task';
+    submitButton.textContent = 'Update Task';
 
-  fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formData)
-  })
-  .then(r => {
-    if (!r.ok) throw Error();
-    return r.json();
-  })
-  .then(task => {
-    modal.style.display = 'none';
-    taskForm.reset();
-    window.location.reload(); // reload for simplicity to show changes
-  })
-  .catch(() => alert('Failed to save task'));
-}
-
-// Open modal with task data for editing
-function openEditModal(card) {
-  modal.style.display = 'flex';
-  modalTitle.textContent = 'Edit Task';
-  submitButton.textContent = 'Update Task';
-
-  editingTaskIdInput.value = card.dataset.taskId;
-  taskForm.title.value = card.dataset.title || '';
-  taskForm.description.value = card.dataset.description || '';
-  taskForm.setDate.value = card.dataset.setDate || '';
-  taskForm.priority.value = card.dataset.priority || '';
-}
-
-// Attach events to existing tasks
-document.querySelectorAll('.task-card').forEach(card => {
-  card.ondragstart = dragStart;
-  card.onclick = () => openEditModal(card);
-});
-
-// Toggle between Kanban and List views
-function toggleView() {
-  const board = document.querySelector('.board');
-  const listView = document.querySelector('.list-view');
-  if (board.style.display === 'none') {
-    board.style.display = 'flex';
-    listView.style.display = 'none';
-  } else {
-    board.style.display = 'none';
-    listView.style.display = 'block';
+    editingTaskIdInput.value = card.dataset.taskId;
+    taskForm.title.value = card.dataset.title || '';
+    taskForm.description.value = card.dataset.description || '';
+    taskForm.setDate.value = card.dataset.setDate || '';
+    taskForm.priority.value = card.dataset.priority || '';
   }
+
+  // Form submission
+  if (taskForm) {
+    taskForm.onsubmit = function (e) {
+      e.preventDefault();
+
+      const taskId = editingTaskIdInput.value;
+      const formData = {
+        title: taskForm.title.value,
+        description: taskForm.description.value,
+        setDate: taskForm.setDate.value,
+        priority: taskForm.priority.value
+      };
+
+      const isEdit = !!taskId;
+      const url = isEdit ? `/api/tasks/${taskId}` : '/api/tasks';
+      const method = isEdit ? 'PATCH' : 'POST';
+
+      fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      .then(r => {
+        if (!r.ok) throw Error();
+        return r.json();
+      })
+      .then(() => {
+        modal.style.display = 'none';
+        taskForm.reset();
+        window.location.reload(); // reload to reflect changes
+      })
+      .catch(() => alert('Failed to save task'));
+    };
+  }
+
+  // Toggle view
+  function toggleView() {
+    const board = document.querySelector('.board');
+    const listView = document.querySelector('.list-view');
+    if (board.style.display === 'none') {
+      board.style.display = 'flex';
+      listView.style.display = 'none';
+    } else {
+      board.style.display = 'none';
+      listView.style.display = 'block';
+    }
+  }
+
+  window.toggleView = toggleView; // make available to HTML inline onclick
+
+  // Drag and edit handlers
+  document.querySelectorAll('.task-card').forEach(card => {
+    card.ondragstart = dragStart;
+    card.onclick = () => openEditModal(card);
+  });
+
+  // Pomodoro timer logic
+  let pomodoroInterval;
+  let pomodoroRemaining = 25 * 60;
+
+  function startPomodoro(event, button) {
+  event.stopPropagation();
+  const taskTitle = button.getAttribute('data-task-title');
+
+  document.getElementById('pomodoroTask').textContent = `Pomodoro: ${taskTitle}`;
+  document.getElementById('pomodoroOverlay').style.display = 'flex';
+  pomodoroRemaining = 25 * 60;
+
+  updateCountdown();
+  clearInterval(pomodoroInterval);
+  pomodoroInterval = setInterval(() => {
+    pomodoroRemaining--;
+    updateCountdown();
+    if (pomodoroRemaining <= 0) {
+      clearInterval(pomodoroInterval);
+      alert('Pomodoro complete! Time for a break.');
+      stopPomodoro();
+    }
+  }, 1000);
 }
+
+  function updateCountdown() {
+    const minutes = Math.floor(pomodoroRemaining / 60);
+    const seconds = pomodoroRemaining % 60;
+    document.getElementById('pomodoroCountdown').textContent =
+      `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function stopPomodoro() {
+  clearInterval(pomodoroInterval);
+  document.getElementById('pomodoroOverlay').style.display = 'none';
+}
+
+  document.querySelectorAll('.pomodoro-btn').forEach(button => {
+    button.addEventListener('click', function(event) {
+      startPomodoro(event, this);
+    });
+  });
+
+  window.stopPomodoro = stopPomodoro; // make accessible to button inline onclick
+});
 </script>
+
 
 </body>
 </html>
+
 
 
 
