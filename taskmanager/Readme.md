@@ -1,57 +1,72 @@
-🧠 FocusBoard – Stay On Task, One Pomodoro at a Time
-FocusBoard is a productivity-focused web application designed to help users manage their tasks efficiently using a visual task board and time management tools. Whether you're juggling multiple projects or trying to focus on deep work, FocusBoard keeps your workflow organised and your mind clear.
+# 🧠 FocusBoard – Stay On Task, One Pomodoro at a Time
 
-🚀 Features
-✅ Draggable Task Cards
-Move your tasks effortlessly across the board between columns such as To Do, In Progress, and Done using a simple and intuitive drag-and-drop interface.
+**FocusBoard** is a productivity-focused web application designed to help users manage their tasks efficiently using a visual task board and time management tools. Whether you're juggling multiple projects or trying to focus on deep work, FocusBoard keeps your workflow organised and your mind clear.
 
-⏱️ Built-In Pomodoro Timer
-Boost your productivity with a Pomodoro timer integrated right into the interface. Work in focused 25-minute sessions with regular breaks to maintain energy and avoid burnout.
+---
 
-🔒 User Authentication
-Secure login and registration system built with Thymeleaf:
+## 🚀 Features
 
-Login Page: Users can sign in with their credentials to access the task board.
+### ✅ Draggable Task Cards  
+Move your tasks effortlessly across the board between columns such as **To Do**, **In Progress**, and **Done** using a simple and intuitive drag-and-drop interface.
 
-Registration Page: New users can create an account to get started with their own workspace.
+### ⏱️ Built-In Pomodoro Timer  
+Boost your productivity with a **Pomodoro timer** integrated right into the interface. Work in focused 25-minute sessions with regular breaks to maintain energy and avoid burnout.
 
-🎨 Responsive Design
+### 🔒 User Authentication  
+Secure login and registration system built with **Thymeleaf**:
+- **Login Page**: Users can sign in with their credentials to access the task board.
+- **Registration Page**: New users can create an account to get started with their own workspace.
+
+### 🎨 Responsive Design  
 The app is styled with clean and responsive CSS, ensuring a smooth user experience across devices – from desktops to smartphones.
 
-📸 UI Previews
-🟦 Login Page
-Simple and clean UI
+---
 
-Required fields for username and password
+## 📸 UI Previews
 
-html
-Copy
-Edit
+### 🟦 Login Page
+Simple and clean UI with required fields for username and password:
+
+```html
 <form th:action="@{/login}" method="post" class="login-form">
-  <!-- Username and Password Inputs -->
+  <div class="form-group">
+    <label>Username:</label>
+    <input type="text" name="username" required />
+  </div>
+  <div class="form-group">
+    <label>Password:</label>
+    <input type="password" name="password" required />
+  </div>
+  <button type="submit">Login</button>
 </form>
 🟩 Register Page
-Allows new users to sign up quickly
-
-Linked to the login page for convenience
+Allows new users to sign up quickly, linked to the login page for convenience:
 
 html
 Copy
 Edit
 <form th:action="@{/register}" method="post" class="login-form">
-  <!-- Username and Password Inputs -->
+  <div class="form-group">
+    <label>Username:</label>
+    <input type="text" name="username" required />
+  </div>
+  <div class="form-group">
+    <label>Password:</label>
+    <input type="password" name="password" required />
+  </div>
+  <button type="submit">Register</button>
 </form>
 🟨 Task Board
-Each task is a card that can be dragged between columns
+Each task is a card that can be dragged between columns.
 
-Tasks are color-coded by priority (High, Medium, Low)
+Tasks are color-coded by priority (High, Medium, Low).
 
-List view toggle for simplified navigation
+List view toggle for simplified viewing on mobile or compact screens.
 
 🟥 Pomodoro Timer
-Start, pause, and reset your focus sessions
+Start, pause, and reset your focus sessions.
 
-Visually integrated into the task board for seamless use
+Visually integrated into the task board for seamless use during work.
 
 🛠️ Tech Stack
 Java + Spring Boot (Backend)
@@ -71,7 +86,7 @@ Edit
 src/
 ├── main/
 │   ├── java/
-│   │   └── com.example.focusboard/
+│   │   └── com/example/focusboard/
 │   ├── resources/
 │   │   ├── templates/
 │   │   │   ├── login.html
